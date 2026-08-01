@@ -529,6 +529,66 @@ input:focus, select:focus, textarea:focus {
 textarea { resize: vertical; min-height: 120px; }
 .form-note { font-size: 0.8rem; color: var(--fg-faint); }
 
+/* ---------- Vehicle cards ---------- */
+.vehicle-card {
+  position: relative;
+  display: block;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-hairline);
+  background: var(--bg-elevated);
+  aspect-ratio: 4/5;
+}
+.vehicle-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .5s var(--ease);
+}
+.vehicle-card:hover img { transform: scale(1.06); }
+.vehicle-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(5,5,6,0) 40%, rgba(5,5,6,0.88) 100%);
+}
+.vehicle-card-body {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: 22px;
+  z-index: 1;
+}
+.vehicle-card-body h3 { color: #fff; margin-bottom: 4px; font-size: 1.15rem; }
+.vehicle-card-body p { margin: 0; font-size: 0.86rem; color: var(--fg-muted); }
+.vehicle-card-arrow {
+  position: absolute;
+  top: 18px; right: 18px;
+  z-index: 1;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: rgba(5,5,6,0.6);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--border-hairline-strong);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  transition: background .25s var(--ease), transform .25s var(--ease);
+}
+.vehicle-card:hover .vehicle-card-arrow { background: var(--brand-blue); transform: rotate(45deg); }
+.vehicle-card-arrow svg { width: 16px; height: 16px; }
+
+/* ---------- Vehicle detail page ---------- */
+.vehicle-hero {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 20px;
+}
+.vehicle-hero .wide-figure:first-child { grid-row: span 2; }
+@media (max-width: 860px) {
+  .vehicle-hero { grid-template-columns: 1fr; }
+  .vehicle-hero .wide-figure:first-child { grid-row: auto; }
+}
+.vehicle-meta { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 28px; }
+
 /* ---------- Utilities ---------- */
 .mt-0 { margin-top: 0; }
 .text-center { text-align: center; }
