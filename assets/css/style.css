@@ -383,6 +383,9 @@ section { padding: 96px 0; }
 }
 .price-table td.name { color: var(--fg); font-weight: 500; }
 .price-note { font-size: 0.82rem; color: var(--fg-faint); margin-top: 4px; }
+.price-note-list { list-style: none; padding: 0; margin: 6px 0 0; font-size: 0.82rem; color: var(--fg-faint); }
+.price-note-list li { position: relative; padding-left: 14px; line-height: 1.5; }
+.price-note-list li::before { content: "•"; position: absolute; left: 0; color: var(--brand-blue-light); }
 
 .price-block { margin-bottom: 40px; }
 .price-block:last-child { margin-bottom: 0; }
