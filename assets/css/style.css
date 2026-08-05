@@ -387,8 +387,11 @@ section { padding: 96px 0; }
 .price-note-list li { position: relative; padding-left: 14px; line-height: 1.5; }
 .price-note-list li::before { content: "•"; position: absolute; left: 0; color: var(--brand-blue-light); }
 
-.price-block { margin-bottom: 40px; }
-.price-block:last-child { margin-bottom: 0; }
+.price-table-compare tbody tr { vertical-align: top; }
+.price-table-compare tbody tr:nth-child(2) .price-note-list { min-height: 60px; }
+.price-table-compare tbody tr:nth-child(3) .price-note-list { min-height: 100px; }
+
+.price-block { align-self: start; }
 
 .tag-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
 .tag-chip {
