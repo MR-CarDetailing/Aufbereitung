@@ -424,7 +424,7 @@ section { padding: 96px 0; }
   overflow: hidden;
 }
 .cta-band h2 { color: #fff; margin-bottom: 10px; }
-.cta-band p { color: rgba(255,255,255,0.86); max-width: 52ch; margin-inline: auto 1.4em; }
+.cta-band p { color: rgba(255,255,255,0.86); max-width: 52ch; margin: 0 auto 1.4em; text-align: center; }
 .cta-band .btn-primary { background: #fff; color: var(--brand-blue-dark); box-shadow: none; }
 .cta-band .btn-primary:hover { background: var(--chrome-100); }
 .cta-band .btn-ghost { border-color: rgba(255,255,255,0.4); color: #fff; }
