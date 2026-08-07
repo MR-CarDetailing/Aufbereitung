@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // Honeypot-Feld: für Menschen unsichtbar, Bots füllen es oft trotzdem aus.
-if (!empty($_POST['website'])) {
+if (!empty($_POST['hp_check'])) {
     respond(true, 'Danke für Ihre Anfrage!');
 }
 
