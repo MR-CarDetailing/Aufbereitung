@@ -137,7 +137,9 @@ p { color: var(--fg-muted); margin: 0 0 1em; }
   background: rgba(5, 5, 6, 0.78);
   backdrop-filter: blur(14px) saturate(140%);
   border-bottom: 1px solid var(--border-hairline);
+  transition: transform 0.3s ease;
 }
+.site-header.header-hidden { transform: translateY(-100%); }
 .site-header .container {
   display: flex;
   align-items: center;

@@ -1,6 +1,22 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const toggle = document.querySelector(".nav-toggle");
+  const header = document.querySelector(".site-header");
   const menu = document.querySelector(".mobile-menu");
+  if (header) {
+    let lastScrollY = window.scrollY;
+    window.addEventListener("scroll", () => {
+      const currentScrollY = window.scrollY;
+      const scrollingDown = currentScrollY > lastScrollY;
+      const menuOpen = menu && menu.classList.contains("open");
+      if (!menuOpen && scrollingDown && currentScrollY > header.offsetHeight) {
+        header.classList.add("header-hidden");
+      } else if (!scrollingDown) {
+        header.classList.remove("header-hidden");
+      }
+      lastScrollY = currentScrollY;
+    }, { passive: true });
+  }
+
+  const toggle = document.querySelector(".nav-toggle");
   if (toggle && menu) {
     toggle.addEventListener("click", () => {
       menu.classList.toggle("open");
