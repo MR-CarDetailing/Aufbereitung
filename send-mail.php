@@ -1,6 +1,7 @@
 <?php
-// Verarbeitet das Kontaktformular serverseitig und leitet die Anfrage per E-Mail weiter.
-// Es findet keine dauerhafte Speicherung der Formulardaten statt.
+// Verarbeitet das Kontaktformular serverseitig und verschickt die Anfrage per
+// authentifiziertem SMTP-Versand (kein Weiterleiten zu einem E-Mail-Programm,
+// keine dauerhafte Speicherung der Formulardaten).
 
 header('Content-Type: application/json; charset=UTF-8');
 
@@ -50,14 +51,155 @@ $body .= "Fahrzeug: {$vehicle}\n";
 $body .= "Gewünschte Leistung: {$service}\n\n";
 $body .= "Nachricht:\n{$message}\n";
 
-$headers = [];
-$headers[] = 'From: MR Car Detailing Website <noreply@mr-cardetailing.de>';
-$headers[] = 'Content-Type: text/plain; charset=UTF-8';
+/**
+ * Minimaler SMTP-Client ohne externe Abhängigkeiten.
+ * Gibt [true, 'OK'] bei Erfolg zurück, sonst [false, 'Fehlermeldung'].
+ */
+function smtpSend(array $cfg, string $to, string $subject, string $body): array {
+    $prefix = $cfg['encryption'] === 'ssl' ? 'ssl://' : '';
+    $socket = @stream_socket_client($prefix . $cfg['host'] . ':' . $cfg['port'], $errno, $errstr, 15);
+    if (!$socket) {
+        return [false, "Verbindung fehlgeschlagen: {$errstr}"];
+    }
+    stream_set_timeout($socket, 15);
 
-$sent = mail($recipient, '=?UTF-8?B?' . base64_encode($subject) . '?=', $body, implode("\r\n", $headers));
+    $read = function () use ($socket): string {
+        $data = '';
+        while (($line = fgets($socket, 515)) !== false) {
+            $data .= $line;
+            if (isset($line[3]) && $line[3] === ' ') {
+                break;
+            }
+        }
+        return $data;
+    };
+    $write = function (string $cmd) use ($socket): void {
+        fwrite($socket, $cmd . "\r\n");
+    };
+    $expect = function (string $code) use ($read): array {
+        $resp = $read();
+        return [substr($resp, 0, 3) === $code, $resp];
+    };
 
-if ($sent) {
-    respond(true, 'Danke für Ihre Anfrage! Wir melden uns zeitnah bei Ihnen.');
-} else {
-    respond(false, 'Die Anfrage konnte nicht gesendet werden. Bitte versuchen Sie es später erneut oder rufen Sie uns an.', 500);
+    [$ok, $resp] = $expect('220');
+    if (!$ok) {
+        fclose($socket);
+        return [false, "Kein SMTP-Gruß: {$resp}"];
+    }
+
+    $write('EHLO mr-cardetailing.de');
+    [$ok, $resp] = $expect('250');
+    if (!$ok) {
+        fclose($socket);
+        return [false, "EHLO fehlgeschlagen: {$resp}"];
+    }
+
+    if ($cfg['encryption'] === 'tls') {
+        $write('STARTTLS');
+        [$ok, $resp] = $expect('220');
+        if (!$ok) {
+            fclose($socket);
+            return [false, "STARTTLS fehlgeschlagen: {$resp}"];
+        }
+        if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+            fclose($socket);
+            return [false, 'TLS-Verschlüsselung fehlgeschlagen.'];
+        }
+        $write('EHLO mr-cardetailing.de');
+        [$ok, $resp] = $expect('250');
+        if (!$ok) {
+            fclose($socket);
+            return [false, "EHLO (TLS) fehlgeschlagen: {$resp}"];
+        }
+    }
+
+    $write('AUTH LOGIN');
+    [$ok, $resp] = $expect('334');
+    if (!$ok) {
+        fclose($socket);
+        return [false, "AUTH LOGIN fehlgeschlagen: {$resp}"];
+    }
+
+    $write(base64_encode($cfg['username']));
+    [$ok, $resp] = $expect('334');
+    if (!$ok) {
+        fclose($socket);
+        return [false, "Benutzername abgelehnt: {$resp}"];
+    }
+
+    $write(base64_encode($cfg['password']));
+    [$ok, $resp] = $expect('235');
+    if (!$ok) {
+        fclose($socket);
+        return [false, "Login fehlgeschlagen: {$resp}"];
+    }
+
+    $write('MAIL FROM:<' . $cfg['from_email'] . '>');
+    [$ok, $resp] = $expect('250');
+    if (!$ok) {
+        fclose($socket);
+        return [false, "MAIL FROM fehlgeschlagen: {$resp}"];
+    }
+
+    $write('RCPT TO:<' . $to . '>');
+    $resp = $read();
+    if (!in_array(substr($resp, 0, 3), ['250', '251'], true)) {
+        fclose($socket);
+        return [false, "RCPT TO fehlgeschlagen: {$resp}"];
+    }
+
+    $write('DATA');
+    [$ok, $resp] = $expect('354');
+    if (!$ok) {
+        fclose($socket);
+        return [false, "DATA fehlgeschlagen: {$resp}"];
+    }
+
+    $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+    $headers = [
+        'From: ' . $cfg['from_name'] . ' <' . $cfg['from_email'] . '>',
+        'To: <' . $to . '>',
+        'Subject: ' . $encodedSubject,
+        'MIME-Version: 1.0',
+        'Content-Type: text/plain; charset=UTF-8',
+        'Date: ' . date('r'),
+    ];
+
+    // SMTP-Dot-Stuffing: Zeilen, die mit einem Punkt beginnen, verdoppeln.
+    $bodyLines = explode("\n", str_replace("\r\n", "\n", $body));
+    foreach ($bodyLines as &$line) {
+        if (isset($line[0]) && $line[0] === '.') {
+            $line = '.' . $line;
+        }
+    }
+    unset($line);
+
+    $fullMessage = implode("\r\n", $headers) . "\r\n\r\n" . implode("\r\n", $bodyLines) . "\r\n.";
+    $write($fullMessage);
+    [$ok, $resp] = $expect('250');
+    if (!$ok) {
+        fclose($socket);
+        return [false, "Senden fehlgeschlagen: {$resp}"];
+    }
+
+    $write('QUIT');
+    fclose($socket);
+    return [true, 'OK'];
 }
+
+$configPath = __DIR__ . '/mail-config.php';
+if (!file_exists($configPath)) {
+    error_log('send-mail.php: mail-config.php fehlt – siehe mail-config.example.php.');
+    respond(false, 'Der Formular-Versand ist noch nicht vollständig eingerichtet. Bitte rufen Sie uns direkt an.', 500);
+}
+
+$config = require $configPath;
+
+[$success, $info] = smtpSend($config, $recipient, $subject, $body);
+
+if ($success) {
+    respond(true, 'Danke für Ihre Anfrage! Wir melden uns zeitnah bei Ihnen.');
+}
+
+error_log('send-mail.php SMTP-Fehler: ' . $info);
+respond(false, 'Die Anfrage konnte nicht gesendet werden. Bitte versuchen Sie es später erneut oder rufen Sie uns an.', 500);
