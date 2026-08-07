@@ -29,20 +29,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const form = document.querySelector(".contact-form");
   if (form) {
-    form.addEventListener("submit", (e) => {
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const status = form.querySelector(".form-status");
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const data = new FormData(form);
-      const subject = encodeURIComponent(`Anfrage über die Website – ${data.get("service") || "Aufbereitung"}`);
-      const bodyLines = [
-        `Name: ${data.get("name") || ""}`,
-        `Telefon: ${data.get("phone") || ""}`,
-        `Fahrzeug: ${data.get("vehicle") || ""}`,
-        `Gewünschte Leistung: ${data.get("service") || ""}`,
-        "",
-        data.get("message") || "",
-      ];
-      const body = encodeURIComponent(bodyLines.join("\n"));
-      window.location.href = `mailto:${form.dataset.mailto}?subject=${subject}&body=${body}`;
+      if (submitBtn) submitBtn.disabled = true;
+      if (status) {
+        status.textContent = "Anfrage wird gesendet …";
+        status.classList.remove("is-success", "is-error");
+      }
+      try {
+        const response = await fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: { Accept: "application/json" },
+        });
+        const result = await response.json();
+        if (status) {
+          status.textContent = result.message || (result.success ? "Danke für Ihre Anfrage!" : "Etwas ist schiefgelaufen.");
+          status.classList.add(result.success ? "is-success" : "is-error");
+        }
+        if (result.success) form.reset();
+      } catch (err) {
+        if (status) {
+          status.textContent = "Die Anfrage konnte nicht gesendet werden. Bitte rufen Sie uns an oder versuchen Sie es später erneut.";
+          status.classList.add("is-error");
+        }
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
     });
   }
 });

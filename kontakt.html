@@ -107,8 +107,8 @@
 
         <div class="card">
           <h3 style="margin-bottom:6px;">Anfrage senden</h3>
-          <p style="margin-bottom:24px;">Öffnet Ihr E-Mail-Programm mit vorausgefüllter Nachricht an uns.</p>
-          <form class="contact-form" data-mailto="m.reinhard01@web.de">
+          <p style="margin-bottom:24px;">Wird direkt über unsere Website an uns geschickt – kein Umweg über Ihr E-Mail-Programm.</p>
+          <form class="contact-form" action="send-mail.php" method="POST">
             <div class="form-row">
               <div>
                 <label for="name">Name</label>
@@ -140,8 +140,13 @@
               <label for="message">Nachricht</label>
               <textarea id="message" name="message" placeholder="Zustand des Fahrzeugs, Wunschtermin, Hol- & Bringservice gewünscht?"></textarea>
             </div>
+            <div class="form-honeypot" aria-hidden="true">
+              <label for="website">Website</label>
+              <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+            </div>
             <button type="submit" class="btn btn-primary btn-block">Anfrage senden</button>
-            <p class="form-note">Mit dem Absenden öffnet sich Ihr E-Mail-Programm. Hinweise zum Datenschutz finden Sie in unserer <a href="datenschutz.html" style="color:var(--brand-blue-light);">Datenschutzerklärung</a>.</p>
+            <p class="form-status" role="status"></p>
+            <p class="form-note">Ihre Daten werden nur zur Bearbeitung dieser Anfrage verwendet. Hinweise zum Datenschutz finden Sie in unserer <a href="datenschutz.html" style="color:var(--brand-blue-light);">Datenschutzerklärung</a>.</p>
           </form>
         </div>
 
