@@ -37,11 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond(false, 'Ungültige Anfrage.', 405);
 }
 
-// Honeypot-Feld: für Menschen unsichtbar, Bots füllen es oft trotzdem aus.
-if (!empty($_POST['hp_check'])) {
-    respond(true, 'Danke für Ihre Anfrage!');
-}
-
 function cleanField(string $value): string {
     $value = trim($value);
     // Zeilenumbrüche entfernen, um Header-Injection in E-Mail-Headern zu verhindern.

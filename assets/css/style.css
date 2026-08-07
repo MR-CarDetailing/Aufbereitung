@@ -542,7 +542,6 @@ input:focus, select:focus, textarea:focus {
 }
 textarea { resize: vertical; min-height: 120px; }
 .form-note { font-size: 0.8rem; color: var(--fg-faint); }
-.form-honeypot { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 .form-status { font-size: 0.88rem; font-weight: 500; margin: 0; min-height: 0; }
 .form-status.is-success { color: #4ade80; }
 .form-status.is-error { color: #f87171; }
