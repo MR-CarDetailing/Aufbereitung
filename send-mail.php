@@ -4,6 +4,8 @@
 // keine dauerhafte Speicherung der Formulardaten).
 
 header('Content-Type: application/json; charset=UTF-8');
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
 
 $recipient = 'm.reinhard01@web.de';
 
@@ -12,6 +14,20 @@ function respond(bool $success, string $message, int $status = 200): void {
     echo json_encode(['success' => $success, 'message' => $message]);
     exit;
 }
+
+// Fängt Fatal Errors (z. B. Syntaxfehler in mail-config.php) ab, damit die
+// Antwort nie leer bleibt, sondern immer eine auswertbare JSON-Fehlermeldung ist.
+register_shutdown_function(function () {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        error_log('send-mail.php Fatal Error: ' . $error['message'] . ' in ' . $error['file'] . ':' . $error['line']);
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=UTF-8');
+            http_response_code(500);
+        }
+        echo json_encode(['success' => false, 'message' => 'Interner Fehler beim Versand. Bitte rufen Sie uns direkt an.']);
+    }
+});
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond(false, 'Ungültige Anfrage.', 405);
@@ -193,9 +209,24 @@ if (!file_exists($configPath)) {
     respond(false, 'Der Formular-Versand ist noch nicht vollständig eingerichtet. Bitte rufen Sie uns direkt an.', 500);
 }
 
-$config = require $configPath;
+try {
+    $config = require $configPath;
+} catch (\Throwable $e) {
+    error_log('send-mail.php: Fehler beim Laden von mail-config.php: ' . $e->getMessage());
+    respond(false, 'Der Formular-Versand ist falsch konfiguriert. Bitte rufen Sie uns direkt an.', 500);
+}
 
-[$success, $info] = smtpSend($config, $recipient, $subject, $body);
+if (!is_array($config) || empty($config['host']) || empty($config['username']) || empty($config['password'])) {
+    error_log('send-mail.php: mail-config.php liefert kein gültiges Konfigurations-Array.');
+    respond(false, 'Der Formular-Versand ist falsch konfiguriert. Bitte rufen Sie uns direkt an.', 500);
+}
+
+try {
+    [$success, $info] = smtpSend($config, $recipient, $subject, $body);
+} catch (\Throwable $e) {
+    error_log('send-mail.php: Ausnahme beim SMTP-Versand: ' . $e->getMessage());
+    respond(false, 'Die Anfrage konnte nicht gesendet werden. Bitte versuchen Sie es später erneut oder rufen Sie uns an.', 500);
+}
 
 if ($success) {
     respond(true, 'Danke für Ihre Anfrage! Wir melden uns zeitnah bei Ihnen.');
