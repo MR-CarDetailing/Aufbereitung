@@ -477,7 +477,7 @@ section { padding: 96px 0; }
 
 /* ---------- Page header (inner pages) ---------- */
 .page-header {
-  padding: 168px 0 64px;
+  padding: 108px 0 48px;
   border-bottom: 1px solid var(--border-hairline);
   background:
     radial-gradient(ellipse 900px 500px at 15% 0%, rgba(0,105,228,0.16), transparent 60%),
