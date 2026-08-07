@@ -83,7 +83,8 @@ function smtpSend(array $cfg, string $to, string $subject, string $body): array 
     }
     stream_set_timeout($socket, 15);
 
-    $read = function () use ($socket): string {
+    $transcript = [];
+    $read = function () use ($socket, &$transcript): string {
         $data = '';
         while (($line = fgets($socket, 515)) !== false) {
             $data .= $line;
@@ -91,9 +92,11 @@ function smtpSend(array $cfg, string $to, string $subject, string $body): array 
                 break;
             }
         }
+        $transcript[] = '< ' . trim($data);
         return $data;
     };
-    $write = function (string $cmd) use ($socket): void {
+    $write = function (string $cmd, ?string $label = null) use ($socket, &$transcript): void {
+        $transcript[] = '> ' . ($label ?? $cmd);
         fwrite($socket, $cmd . "\r\n");
     };
     $expect = function (string $code) use ($read): array {
@@ -104,14 +107,14 @@ function smtpSend(array $cfg, string $to, string $subject, string $body): array 
     [$ok, $resp] = $expect('220');
     if (!$ok) {
         fclose($socket);
-        return [false, "Kein SMTP-Gruß: {$resp}"];
+        return [false, "Kein SMTP-Gruß: {$resp}" . ' | TRANSCRIPT: ' . implode(' :: ', $transcript)];
     }
 
     $write('EHLO mr-cardetailing.de');
     [$ok, $resp] = $expect('250');
     if (!$ok) {
         fclose($socket);
-        return [false, "EHLO fehlgeschlagen: {$resp}"];
+        return [false, "EHLO fehlgeschlagen: {$resp}" . ' | TRANSCRIPT: ' . implode(' :: ', $transcript)];
     }
 
     if ($cfg['encryption'] === 'tls') {
@@ -137,21 +140,21 @@ function smtpSend(array $cfg, string $to, string $subject, string $body): array 
     [$ok, $resp] = $expect('334');
     if (!$ok) {
         fclose($socket);
-        return [false, "AUTH LOGIN fehlgeschlagen: {$resp}"];
+        return [false, "AUTH LOGIN fehlgeschlagen: {$resp}" . ' | TRANSCRIPT: ' . implode(' :: ', $transcript)];
     }
 
-    $write(base64_encode($cfg['username']));
+    $write(base64_encode($cfg['username']), '[base64 username, ' . strlen($cfg['username']) . ' Zeichen]');
     [$ok, $resp] = $expect('334');
     if (!$ok) {
         fclose($socket);
-        return [false, "Benutzername abgelehnt: {$resp}"];
+        return [false, "Benutzername abgelehnt: {$resp}" . ' | TRANSCRIPT: ' . implode(' :: ', $transcript)];
     }
 
-    $write(base64_encode($cfg['password']));
+    $write(base64_encode($cfg['password']), '[base64 password, ' . strlen($cfg['password']) . ' Zeichen]');
     [$ok, $resp] = $expect('235');
     if (!$ok) {
         fclose($socket);
-        return [false, "Login fehlgeschlagen: {$resp}"];
+        return [false, "Login fehlgeschlagen: {$resp}" . ' | TRANSCRIPT: ' . implode(' :: ', $transcript)];
     }
 
     $write('MAIL FROM:<' . $cfg['from_email'] . '>');
