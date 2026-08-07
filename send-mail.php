@@ -7,9 +7,9 @@ header('Content-Type: application/json; charset=UTF-8');
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
-// TEMPORÄR zum Debuggen: zeigt die genaue Fehlermeldung im Formular an.
-// Danach wieder auf false setzen!
-const DEBUG_MODE = true;
+// Bei Bedarf zum Debuggen kurzzeitig auf true setzen, zeigt dann die genaue
+// Fehlermeldung im Formular an. Danach immer wieder auf false zurücksetzen!
+const DEBUG_MODE = false;
 
 $recipient = 'm.reinhard01@web.de';
 
