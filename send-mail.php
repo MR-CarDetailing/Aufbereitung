@@ -7,6 +7,10 @@ header('Content-Type: application/json; charset=UTF-8');
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
+// TEMPORÄR zum Debuggen: zeigt die genaue Fehlermeldung im Formular an.
+// Danach wieder auf false setzen!
+const DEBUG_MODE = true;
+
 $recipient = 'm.reinhard01@web.de';
 
 function respond(bool $success, string $message, int $status = 200): void {
@@ -213,19 +217,25 @@ try {
     $config = require $configPath;
 } catch (\Throwable $e) {
     error_log('send-mail.php: Fehler beim Laden von mail-config.php: ' . $e->getMessage());
-    respond(false, 'Der Formular-Versand ist falsch konfiguriert. Bitte rufen Sie uns direkt an.', 500);
+    $msg = 'Der Formular-Versand ist falsch konfiguriert. Bitte rufen Sie uns direkt an.';
+    if (DEBUG_MODE) $msg .= ' [DEBUG: ' . $e->getMessage() . ']';
+    respond(false, $msg, 500);
 }
 
 if (!is_array($config) || empty($config['host']) || empty($config['username']) || empty($config['password'])) {
     error_log('send-mail.php: mail-config.php liefert kein gültiges Konfigurations-Array.');
-    respond(false, 'Der Formular-Versand ist falsch konfiguriert. Bitte rufen Sie uns direkt an.', 500);
+    $msg = 'Der Formular-Versand ist falsch konfiguriert. Bitte rufen Sie uns direkt an.';
+    if (DEBUG_MODE) $msg .= ' [DEBUG: mail-config.php lieferte kein gültiges Array mit host/username/password]';
+    respond(false, $msg, 500);
 }
 
 try {
     [$success, $info] = smtpSend($config, $recipient, $subject, $body);
 } catch (\Throwable $e) {
     error_log('send-mail.php: Ausnahme beim SMTP-Versand: ' . $e->getMessage());
-    respond(false, 'Die Anfrage konnte nicht gesendet werden. Bitte versuchen Sie es später erneut oder rufen Sie uns an.', 500);
+    $msg = 'Die Anfrage konnte nicht gesendet werden. Bitte versuchen Sie es später erneut oder rufen Sie uns an.';
+    if (DEBUG_MODE) $msg .= ' [DEBUG: ' . $e->getMessage() . ']';
+    respond(false, $msg, 500);
 }
 
 if ($success) {
@@ -233,4 +243,6 @@ if ($success) {
 }
 
 error_log('send-mail.php SMTP-Fehler: ' . $info);
-respond(false, 'Die Anfrage konnte nicht gesendet werden. Bitte versuchen Sie es später erneut oder rufen Sie uns an.', 500);
+$msg = 'Die Anfrage konnte nicht gesendet werden. Bitte versuchen Sie es später erneut oder rufen Sie uns an.';
+if (DEBUG_MODE) $msg .= ' [DEBUG: ' . $info . ']';
+respond(false, $msg, 500);
