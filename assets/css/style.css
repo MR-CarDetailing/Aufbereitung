@@ -140,6 +140,9 @@ p { color: var(--fg-muted); margin: 0 0 1em; }
   transition: transform 0.3s ease;
 }
 .site-header.header-hidden { transform: translateY(-100%); }
+@media (max-width: 900px) {
+  .site-header.header-hidden { transform: none; }
+}
 .site-header .container {
   display: flex;
   align-items: center;
