@@ -218,6 +218,13 @@ p { color: var(--fg-muted); margin: 0 0 1em; }
 
 .mobile-menu {
   display: none;
+  position: fixed;
+  top: 76px;
+  left: 0;
+  right: 0;
+  z-index: 49;
+  max-height: calc(100vh - 76px);
+  overflow-y: auto;
   border-bottom: 1px solid var(--border-hairline);
   background: var(--bg-deep);
 }
